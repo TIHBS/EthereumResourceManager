@@ -12,6 +12,7 @@ import "remix_accounts.sol";
 import "../contracts/ResourceManager.sol";
 import "hardhat/console.sol";
 
+
 contract TestInternals is ResourceManager {
     string txid = "id-1";
     string txid2 = "id-2";
@@ -30,7 +31,9 @@ contract TestInternals is ResourceManager {
     
     mapping(string => VariableState) variables;
     
-    
+    /**
+     * @dev tests the compareStrings function
+     */ 
     function testCompareStrings() public {
         string memory a = "abc";
         string storage b = abc;
@@ -43,6 +46,9 @@ contract TestInternals is ResourceManager {
         Assert.ok(compareStrings(a, a), "strings are equal");
     }
     
+    /**
+     * @dev tests how we copy strings
+     */ 
     function testCopyStrings() public {
         variables[vara].value = "a";
         variables[vara].beforeImage = "b";
@@ -54,6 +60,9 @@ contract TestInternals is ResourceManager {
         Assert.equal("", variables[vara].beforeImage, "incorrect beforeImage");
     }
     
+    /**
+     * b_tx1 w_tx1[vara] w_tx2[varb] r_tx1[varb] c_tx1
+     */ 
     function testHappyPathWriteThenRead() public {
         this.begin(txid);
         setValue(vara, txid, "hello");
@@ -68,9 +77,10 @@ contract TestInternals is ResourceManager {
         this.commit(txid);
     }
     
-
-    
-    
+    /**
+     * b_tx2 r_tx2[vara]                                                 r_tx2[vara] r_tx2[varb] w_tx2[vara] w_tx2[varb] r_tx2[vara] r_tx2[varb] c_tx2
+     *                   b_tx3 r_tx3[vara] w_tx3[varb] r_tx3[varb] c_tx3 
+     */ 
     function testTwoTransactions() public {
         this.begin(txid2);
         string memory value = getValue(vara, txid2);
@@ -111,6 +121,10 @@ contract TestInternals is ResourceManager {
         
     }
     
+    /**
+     * b_tx4                                                 r_tx4[vara] c_tx4
+     *       b_tx5 r_tx5[vara] w_tx5[vara] r_tx5[vara] a_tx5
+     */ 
     function testEffectsOfAbort() public {
         this.begin(txid4);
         
@@ -138,6 +152,9 @@ contract TestInternals is ResourceManager {
         this.commit(txid4);
     }
     
+    /**
+     * b_tx6 r_tx6[vara] r_tx6[varb] w_tx6[vara] w_tx6[varb] c_tx6
+     */ 
     function testLocks_ReadThenWrite() public {
         this.begin(txid6);
         

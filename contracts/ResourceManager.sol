@@ -3,6 +3,7 @@ pragma solidity >=0.7.0 <0.9.0;
 
 import "./IResourceManager.sol"; 
 import {StringUtils} from "./StringUtils.sol";
+import "hardhat/console.sol";
 
 
 contract ResourceManager is IResourceManager {
@@ -34,6 +35,9 @@ contract ResourceManager is IResourceManager {
     }
     
     modifier isTxOwner(string memory txId) {
+        console.log(tx.origin);
+        console.log(txId);
+        console.log(txs[txId].owner);
         require (txs[txId].owner == tx.origin, "Message sender is not owner of global transaction!");
         _;
     }
@@ -87,6 +91,7 @@ contract ResourceManager is IResourceManager {
     
     function begin(string calldata txId) external override {
         require (txs[txId].owner ==  address(0), "The global transaction is already started!");
+        console.log(tx.origin);
         txs[txId].owner = tx.origin;
         txs[txId].state = TxState.STARTED;
         emit TxStarted(tx.origin, txId);

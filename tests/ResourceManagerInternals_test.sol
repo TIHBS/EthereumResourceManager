@@ -31,6 +31,12 @@ contract TestInternals is ResourceManager {
     string cba = "cba";
     
     mapping(string => VariableState) variables;
+
+    function testAddressConversion() public {
+        address a = tx.origin;
+        string memory s = StringUtils.addressToHexString(a);
+        Assert.equal(bytes(s).length, 42, "reasonable length");
+    }
     
     
     function testCompareStrings() public {

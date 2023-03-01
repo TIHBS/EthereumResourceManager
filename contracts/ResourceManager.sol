@@ -107,7 +107,7 @@ contract ResourceManager is IResourceManager {
             if (isWL(lockedVariables[i])) {
                 string memory beforeImage = variables[lockedVariables[i]].beforeImage;
                 variables[lockedVariables[i]].value = beforeImage;
-                variables[lockedVariables[i]].beforeImage = "";
+                //variables[lockedVariables[i]].beforeImage = "";
             }
         }
         
@@ -124,9 +124,8 @@ contract ResourceManager is IResourceManager {
         VariableState storage variable = variables[variableName];
 
         if (hasSetLock == true) {
-            string memory oldValue = variable.value;
-            variable.beforeImage = oldValue;
-        }
+            variable.beforeImage = variable.value;
+        } 
         
         variable.value = value;
     
@@ -134,7 +133,7 @@ contract ResourceManager is IResourceManager {
 
     function getValue(string memory variableName, string memory txId) external override isTxOwner(txId) isTxStarted(txId) returns(string memory) {
         bool acquiredLock;
-        (acquiredLock, ) = acquireLock(variableName, txId, LockType.WRITE_LOCK);
+        (acquiredLock, ) = acquireLock(variableName, txId, LockType.READ_LOCK);
         require(acquiredLock, "Cannot lock a variable for reading!");
         VariableState storage variable = variables[variableName];
 
@@ -235,6 +234,7 @@ contract ResourceManager is IResourceManager {
 
     function releaseWL(string memory variableName, string memory txId) private {
         VariableState storage variable = variables[variableName];
+        variable.beforeImage = "";
         delete variable.writeLock;
         assert(removeElement(txs[txId].lockedVariables, variableName));
     }

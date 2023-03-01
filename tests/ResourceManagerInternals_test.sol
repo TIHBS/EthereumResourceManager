@@ -132,15 +132,16 @@ contract TestInternals is ResourceManager {
     
     function testEffectsOfAbort() public {
         this.begin(txid4);
-        
         this.begin(txid5);
-        string memory value = this.getValue(vara, txid5);
+
+        string memory beforeSet = this.getValue(vara, txid5);
         
         this.setValue(vara, txid5, "this is a new value!");
-        value = getBeforeImage(vara);
-        Assert.equal("I am the king!", value, "incorrect value for vara.getBeforeImage()");
+        string memory value = getBeforeImage(vara);
+        Assert.equal(beforeSet, value, "incorrect value for vara.getBeforeImage()");
         value = this.getValue(vara, txid5);
         Assert.equal("this is a new value!", value, "incorrect value for vara");
+        this.setValue(vara, txid5, "yet another new value!");
         string[] memory lockedVariables = getLockedVariables(txid5);
         Assert.equal(1, lockedVariables.length, "incorrect number of variables locked!");
         this.abort(txid5);
@@ -149,6 +150,8 @@ contract TestInternals is ResourceManager {
         
         value = getBeforeImage(vara);
         Assert.equal("", value, "incorrect value for vara.getBeforeImage()");
+        value = getValueNoLocking(vara);
+        Assert.equal(beforeSet, value, "the value after abort must return to its original state");
         
         // lets see if we can the effects of txid5 were removed because of the abort
         value = this.getValue(vara, txid4);
@@ -160,8 +163,8 @@ contract TestInternals is ResourceManager {
     function testLocks_ReadThenWrite() public {
         this.begin(txid6);
         
-        string memory value1 = this.getValue(vara, txid6);
-        string memory value2 = this.getValue(varb, txid6);
+        this.getValue(vara, txid6);
+        this.getValue(varb, txid6);
         string[] memory lockedVariables = getLockedVariables(txid6);
         Assert.equal(2, lockedVariables.length, "incorrect number of variables locked!");
     

@@ -21,7 +21,7 @@ contract HotelManager {
     }
 
     function isRoomAvailable(string memory txId) public returns (bool) {
-        string memory seatOwner = getRM().getValue(txId, "roomOwner");
+        string memory seatOwner = getRM().getValue("roomOwner", txId);
         bool result = StringUtils.isEmpty(seatOwner);
 
         emit IsRoomAvailable(txId, result);
@@ -30,7 +30,7 @@ contract HotelManager {
 
     function queryRoomPrice(string calldata txId) external returns (uint256) {
         uint256 defaultPrice = 500;
-        string memory priceS = getRM().getValue(txId, "roomPrice");
+        string memory priceS = getRM().getValue("roomPrice", txId);
         uint256 result = defaultPrice;
 
         if (!StringUtils.isEmpty(priceS)) {
@@ -43,7 +43,7 @@ contract HotelManager {
 
     function queryClientBalance(string calldata txId) public returns (uint256) {
         string memory varName = formulateClientBalanceVarName(tx.origin);
-        string memory balance = getRM().getValue(txId, varName);
+        string memory balance = getRM().getValue(varName, txId);
         uint256 result = 0;
 
         if (!StringUtils.isEmpty(balance)) {
@@ -56,33 +56,27 @@ contract HotelManager {
 
     function changeRoomPrice(string calldata txId, uint256 newPrice) external {
         string memory priceS = StringUtils.uintToString(newPrice);
-        getRM().setValue(txId, "roomPrice", priceS);
+        getRM().setValue("roomPrice", txId, priceS);
     }
 
-    function addToClientBalance(string calldata txId, uint256 amountToAdd)
-        external
-    {
+    function addToClientBalance(string calldata txId, uint256 amountToAdd) external {
         require(amountToAdd > 0, "The amount must be a positive value!");
         string memory varName = formulateClientBalanceVarName(tx.origin);
         uint256 balance = queryClientBalance(txId);
         uint256 newBalance = balance + amountToAdd;
         string memory newBalanceS = StringUtils.uintToString(newBalance);
-        getRM().setValue(txId, varName, newBalanceS);
+        getRM().setValue(varName, txId, newBalanceS);
     }
 
     function bookRoom(string calldata txId) external {
         require(isRoomAvailable(txId), "the room must be available!");
         uint256 roomPrice = this.queryRoomPrice(txId);
         deductFromClientBalance(txId, roomPrice);
-        getRM().setValue(
-            txId,
-            "roomOwner",
-            StringUtils.addressToHexString(tx.origin)
-        );
+        getRM().setValue("roomOwner", txId, StringUtils.addressToHexString(tx.origin));
     }
 
     function hasReservation(string calldata txId) external returns (bool) {
-        string memory ownerS = getRM().getValue(txId, "roomOwner");
+        string memory ownerS = getRM().getValue("roomOwner", txId);
         string memory currentClient = StringUtils.addressToHexString(tx.origin);
         bool result = StringUtils.compareStrings(ownerS, currentClient);
 
@@ -90,26 +84,16 @@ contract HotelManager {
         return result;
     }
 
-    function deductFromClientBalance(
-        string calldata txId,
-        uint256 amountToDeduct
-    ) internal {
+    function deductFromClientBalance(string calldata txId, uint256 amountToDeduct) internal {
         string memory varName = formulateClientBalanceVarName(tx.origin);
         uint256 balance = queryClientBalance(txId);
         uint256 newBalance = balance - amountToDeduct;
-        require(
-            newBalance >= 0,
-            "The amount to deduct cannot be larger than the current balance!"
-        );
+        require(newBalance >= 0, "The amount to deduct cannot be larger than the current balance!");
         string memory newBalanceS = StringUtils.uintToString(newBalance);
-        getRM().setValue(txId, varName, newBalanceS);
+        getRM().setValue(varName, txId, newBalanceS);
     }
 
-    function formulateClientBalanceVarName(address client)
-        private
-        pure
-        returns (string memory)
-    {
+    function formulateClientBalanceVarName(address client) private pure returns (string memory) {
         return StringUtils.addressToHexString(client);
     }
 }

@@ -7,10 +7,10 @@ import {StringUtils} from "./StringUtils.sol";
 contract HotelManager {
     address private resourceManagerAddress;
 
-    event IsRoomAvailable(string txId, bool isRoomAvailable);
-    event QueryRoomPrice(string txId, uint256 roomPrice);
-    event QueryClientBalance(string txId, uint256 clientBalance);
-    event HasReservation(string txId, bool hasReservation);
+    event IsRoomAvailableEvent(string txId, bool isRoomAvailable);
+    event QueryRoomPriceEvent(string txId, uint256 roomPrice);
+    event QueryClientBalanceEvent(string txId, uint256 clientBalance);
+    event HasReservationEvent(string txId, bool hasReservation);
 
     function setResourceManagerAddress(address _newAddress) public {
         resourceManagerAddress = _newAddress;
@@ -24,7 +24,7 @@ contract HotelManager {
         string memory seatOwner = getRM().getValue("roomOwner", txId);
         bool result = StringUtils.isEmpty(seatOwner);
 
-        emit IsRoomAvailable(txId, result);
+        emit IsRoomAvailableEvent(txId, result);
         return result;
     }
 
@@ -37,7 +37,7 @@ contract HotelManager {
             result = StringUtils.stringToUint(priceS);
         }
 
-        emit QueryRoomPrice(txId, result);
+        emit QueryRoomPriceEvent(txId, result);
         return result;
     }
 
@@ -50,7 +50,7 @@ contract HotelManager {
             result = StringUtils.stringToUint(balance);
         }
 
-        emit QueryClientBalance(txId, result);
+        emit QueryClientBalanceEvent(txId, result);
         return result;
     }
 
@@ -80,8 +80,13 @@ contract HotelManager {
         string memory currentClient = StringUtils.addressToHexString(tx.origin);
         bool result = StringUtils.compareStrings(ownerS, currentClient);
 
-        emit HasReservation(txId, result);
+        emit HasReservationEvent(txId, result);
         return result;
+    }
+
+    function checkout(string calldata txId) external {
+        require(this.hasReservation(txId), "you must have a reservation in order to checkout!");
+        getRM().setValue("roomOwner", txId, "");
     }
 
     function deductFromClientBalance(string calldata txId, uint256 amountToDeduct) internal {

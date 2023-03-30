@@ -8,6 +8,7 @@ import {StringUtils} from "./StringUtils.sol";
 
 contract ResourceManager is IResourceManager {
     using StringUtils for string;
+    uint public constant TIMEOUT_DURATION = 150;
     enum LockType { UNLOCKED, READ_LOCK, WRITE_LOCK }
     enum TxState { UNDEFINED, STARTED, COMMITTED, ABORTED }
 
@@ -23,6 +24,7 @@ contract ResourceManager is IResourceManager {
         string value;
         // the before-image of the variable
         string beforeImage;
+
     }
     
     struct TxDetails {
@@ -32,6 +34,8 @@ contract ResourceManager is IResourceManager {
        TxState state;
        // The list of variables locked (read or write) by the transaction
        string[] lockedVariables;
+        // the deadline for a tx in the STARTED state (in block height value)
+        uint256 timeout;
     }
     
     modifier isTxOwner(string memory txId) {
@@ -40,7 +44,7 @@ contract ResourceManager is IResourceManager {
     }
 
     modifier isTxStarted(string memory txId) {
-        require(txs[txId].state == TxState.STARTED, "The transaction is in invalid state!");
+        require(ensureStarted(txId), "The transaction is in invalid state!");
         _;
     }
     
@@ -85,12 +89,9 @@ contract ResourceManager is IResourceManager {
             releaseLock(lockedVariables[i], txId);
         }
     }
-    
-    function begin(string calldata txId) external override {
-        require (txs[txId].owner ==  address(0), "The global transaction is already started!");
-        txs[txId].owner = tx.origin;
-        txs[txId].state = TxState.STARTED;
-        emit TxStarted(tx.origin, txId);
+
+    function prepare(string calldata txId) external override {
+
     }
 
     function commit(string calldata txId) external override isTxOwner(txId) isTxStarted(txId) {
@@ -101,6 +102,15 @@ contract ResourceManager is IResourceManager {
     }
     
     function abort(string calldata txId) external override isTxOwner(txId) isTxStarted(txId) {
+        require(txs[txId].state != TxState.COMMITTED, "Cannot abort a transaction that is already committed!");
+
+        if (txs[txId].state !=TxState.ABORTED) {
+            doAbort(txId);
+        }
+
+    }
+
+    function doAbort(string calldata txId) private {
         string[] storage lockedVariables = txs[txId].lockedVariables;
         
         // restore the before image of all write-locked variables.
@@ -114,21 +124,23 @@ contract ResourceManager is IResourceManager {
         
         releaseLocks(txId);
         txs[txId].state = TxState.ABORTED;
-        emit TxAborted(tx.origin, txId);
     }
     
-    function setValue(string memory variableName, string memory txId, string memory value) external override isTxOwner(txId) isTxStarted(txId) {
+    function setValue(string memory variableName, string calldata txId, string memory value) external override isTxOwner(txId) isTxStarted(txId) {
         bool acquiredLock;
         bool hasSetLock;
         (acquiredLock, hasSetLock) = acquireLock(variableName, txId, LockType.WRITE_LOCK);
-        require(acquiredLock, "Cannot lock a variable for writing!");
-        VariableState storage variable = variables[variableName];
+        if (!acquiredLock) {
+            doAbort(txId);
+        } else {
+            VariableState storage variable = variables[variableName];
 
-        if (hasSetLock == true) {
-            variable.beforeImage = variable.value;
-        } 
-        
-        variable.value = value;
+            if (hasSetLock == true) {
+                variable.beforeImage = variable.value;
+            } 
+            
+            variable.value = value;
+        }
     
     }
 
@@ -139,6 +151,16 @@ contract ResourceManager is IResourceManager {
         VariableState storage variable = variables[variableName];
 
         return variable.value;
+    }
+
+    function ensureStarted(string memory txId) private returns(bool) {
+        if(txs[txId].owner == address(0)) {
+            txs[txId].owner = tx.origin;
+            txs[txId].state = TxState.STARTED;
+            txs[txId].timeout = TIMEOUT_DURATION + block.number;
+        }
+
+        return txs[txId].state == TxState.STARTED;
     }
     
     function canObtainLock(string memory variableName, string memory txId, LockType lockType) private view returns(bool){

@@ -7,7 +7,7 @@ interface IResourceManager {
     event TxCommitted(address indexed owner, string txId);
     event TxAborted(address indexed owner, string txId);
 
-    function begin(string calldata txId) external;
+    function prepare(string calldata txId) external;
     function commit(string calldata txId) external;
     function abort(string calldata txId) external;
     function setValue(string memory variableName, string memory txId, string memory value) external;

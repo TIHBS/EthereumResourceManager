@@ -21,8 +21,8 @@ contract HotelManager {
     }
 
     function isRoomAvailable(string memory txId) public returns (bool) {
-        string memory seatOwner = getRM().getValue("roomOwner", txId);
-        bool result = StringUtils.isEmpty(seatOwner);
+        string memory roomOwner = getRM().getValue("roomOwner", txId);
+        bool result = StringUtils.isEmpty(roomOwner);
 
         emit IsRoomAvailableEvent(txId, result);
         return result;

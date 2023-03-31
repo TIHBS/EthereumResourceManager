@@ -20,12 +20,17 @@ contract HotelManager {
         return IResourceManager(resourceManagerAddress);
     }
 
-    function isRoomAvailable(string memory txId) public returns (bool) {
+    function isRoomAvailable(string memory txId) public returns (bool, bool) {
         (string memory roomOwner, bool isSuccessful) = getRM().getValue("roomOwner", txId);
-        bool result = StringUtils.isEmpty(roomOwner);
 
-        emit IsRoomAvailableEvent(txId, result);
-        return result;
+        if (isSuccessful) {
+            bool result = StringUtils.isEmpty(roomOwner);
+
+            emit IsRoomAvailableEvent(txId, result);
+            return (result, true);
+        } else {
+            return (false, false);
+        }
     }
 
     function queryRoomPrice(string calldata txId) external returns (uint256, bool) {
@@ -87,7 +92,8 @@ contract HotelManager {
     }
 
     function bookRoom(string calldata txId) external returns (bool) {
-        require(isRoomAvailable(txId), "the room must be available!");
+        (bool available, bool successful) = isRoomAvailable(txId);
+        require(available && successful, "the room must be available!");
         (uint256 roomPrice, bool isSuccessful) = this.queryRoomPrice(txId);
         if (isSuccessful) {
             if (deductFromClientBalance(txId, roomPrice)) {

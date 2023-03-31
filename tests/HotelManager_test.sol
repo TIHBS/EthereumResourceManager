@@ -49,13 +49,13 @@ contract TestHotelManager {
     }
 
     function testBookRoom() public {
-        bool isAvailable = hm.isRoomAvailable("tx3");
+        (bool isAvailable, ) = hm.isRoomAvailable("tx3");
         Assert.ok(isAvailable, "the room must be available at this stage!");
         (uint initialBalance, bool isSuccessful1) = hm.queryClientBalance("tx3");
         (uint roomPrice, bool isSuccessful2) = hm.queryRoomPrice("tx3");
         hm.bookRoom("tx3");
         (uint newBalance, bool isSuccessful3) = hm.queryClientBalance("tx3");
-        isAvailable = hm.isRoomAvailable("tx3");
+        (isAvailable, ) = hm.isRoomAvailable("tx3");
         Assert.equal(initialBalance - roomPrice, newBalance, "the new balance should be the old one minus the room price");
         Assert.ok(!isAvailable, "the room must be booked at this stage!");
         rm.prepare("tx3");
@@ -84,7 +84,7 @@ contract TestHotelManager {
         rm.commit("txf1");
 
         // try to book -- uh oh not enough money, abort
-        bool isAvailable = hm.isRoomAvailable("txf2");
+        (bool isAvailable, ) = hm.isRoomAvailable("txf2");
         (uint price2, bool isSuccessful2) = hm.queryRoomPrice("txf2");
         (uint balance, bool isSuccessful3) = hm.queryClientBalance("txf2");
         rm.prepare("txf2");
@@ -96,7 +96,7 @@ contract TestHotelManager {
         rm.commit("txf3");
 
         // now do the actual booking
-        isAvailable = hm.isRoomAvailable("txf4");
+        (isAvailable, ) = hm.isRoomAvailable("txf4");
         (uint price3, bool isSuccessful4) = hm.queryRoomPrice("txf4");
         (uint balance2, bool isSuccessful5) = hm.queryClientBalance("txf4");
         Assert.ok(balance2 > price3, "we should have enough balance now!");

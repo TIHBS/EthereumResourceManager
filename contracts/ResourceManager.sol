@@ -10,7 +10,7 @@ contract ResourceManager is IResourceManager {
     using StringUtils for string;
     uint public constant TIMEOUT_DURATION = 150;
     enum LockType { UNLOCKED, READ_LOCK, WRITE_LOCK }
-    enum TxState { UNDEFINED, STARTED, COMMITTED, ABORTED }
+    enum TxState { UNDEFINED, STARTED, PREPARED, COMMITTED, ABORTED }
 
     struct VariableState {
         string name;
@@ -39,7 +39,7 @@ contract ResourceManager is IResourceManager {
     }
     
     modifier isTxOwner(string memory txId) {
-        require (txs[txId].owner == tx.origin, "Message sender is not owner of global transaction!");
+        require (txs[txId].owner == address(0) || txs[txId].owner == tx.origin, "Message sender is not owner of global transaction!");
         _;
     }
 
@@ -90,24 +90,33 @@ contract ResourceManager is IResourceManager {
         }
     }
 
-    function prepare(string calldata txId) external override {
+    function prepare(string calldata txId) external override isTxOwner(txId) {
+        require(txs[txId].owner != address(0), "Cannot abort a trasnaction that is not started!");
+
+        if(txs[txId].state == TxState.STARTED) {
+            txs[txId].state = TxState.PREPARED;
+            emit Voted(tx.origin, txId, true);
+        } else {
+            emit Voted(tx.origin, txId, false);
+        }
 
     }
 
-    function commit(string calldata txId) external override isTxOwner(txId) isTxStarted(txId) {
+    function commit(string calldata txId) external override isTxOwner(txId) {
+        require(txs[txId].state == TxState.PREPARED, "Cannot commit a transaction that is not in the prepared state!");
         // release all relevant locks
         releaseLocks(txId);
         txs[txId].state = TxState.COMMITTED;
         emit TxCommitted(tx.origin, txId);
     }
     
-    function abort(string calldata txId) external override isTxOwner(txId) isTxStarted(txId) {
+    function abort(string calldata txId) external override isTxOwner(txId) {
+        require(txs[txId].owner != address(0), "Cannot abort a trasnaction that is not started!");
         require(txs[txId].state != TxState.COMMITTED, "Cannot abort a transaction that is already committed!");
 
-        if (txs[txId].state !=TxState.ABORTED) {
+        if (txs[txId].state != TxState.ABORTED) {
             doAbort(txId);
         }
-
     }
 
     function doAbort(string calldata txId) private {
@@ -118,20 +127,21 @@ contract ResourceManager is IResourceManager {
             if (isWL(lockedVariables[i])) {
                 string memory beforeImage = variables[lockedVariables[i]].beforeImage;
                 variables[lockedVariables[i]].value = beforeImage;
-                //variables[lockedVariables[i]].beforeImage = "";
             }
         }
         
         releaseLocks(txId);
         txs[txId].state = TxState.ABORTED;
+        emit TxAborted(tx.origin, txId);
     }
     
-    function setValue(string memory variableName, string calldata txId, string memory value) external override isTxOwner(txId) isTxStarted(txId) {
+    function setValue(string memory variableName, string calldata txId, string memory value) external override isTxOwner(txId) isTxStarted(txId) returns (bool) {
         bool acquiredLock;
         bool hasSetLock;
         (acquiredLock, hasSetLock) = acquireLock(variableName, txId, LockType.WRITE_LOCK);
         if (!acquiredLock) {
             doAbort(txId);
+            return false;
         } else {
             VariableState storage variable = variables[variableName];
 
@@ -140,17 +150,26 @@ contract ResourceManager is IResourceManager {
             } 
             
             variable.value = value;
+
+            return true;
         }
     
     }
 
-    function getValue(string memory variableName, string memory txId) external override isTxOwner(txId) isTxStarted(txId) returns(string memory) {
+    function getValue(string memory variableName, string calldata txId) external override isTxOwner(txId) isTxStarted(txId) returns(string memory, bool) {
         bool acquiredLock;
         (acquiredLock, ) = acquireLock(variableName, txId, LockType.READ_LOCK);
-        require(acquiredLock, "Cannot lock a variable for reading!");
-        VariableState storage variable = variables[variableName];
+        
+        if (!acquiredLock) {
+            doAbort(txId);
 
-        return variable.value;
+            return ("", false);
+
+        } else {
+            VariableState storage variable = variables[variableName];
+
+            return (variable.value, true);
+        }
     }
 
     function ensureStarted(string memory txId) private returns(bool) {

@@ -83,53 +83,64 @@ contract TestInternals is ResourceManager {
     }
     
     function testHappyPathWriteThenRead() public {
-        this.begin(txid);
-        this.setValue(vara, txid, "hello");
-        this.setValue(varb, txid, "bye bye");
-        string memory value = this.getValue(vara, txid);
+        bool isSuccessful = this.setValue(vara, txid, "hello");
+        Assert.ok(isSuccessful, 'set value failed unexpectedly!');
+        isSuccessful = this.setValue(varb, txid, "bye bye");
+        Assert.ok(isSuccessful, 'set value failed unexpectedly!');
+        (string memory value, bool isSuccessful2) = this.getValue(vara, txid);
+        Assert.ok(isSuccessful2, 'get value failed unexpectedly!');
         Assert.equal("hello", value, "var-a contains an unexpected value!");
-        value = this.getValue(varb, txid);
+        (value, isSuccessful) = this.getValue(varb, txid);
+        Assert.ok(isSuccessful, 'get value failed unexpectedly!');
         Assert.equal("bye bye", value, "var-a contains an unexpected value!");
         string[] memory lockedVariables = getLockedVariables(txid);
         Assert.equal(2, lockedVariables.length, "incorrect number of variables locked!");
-        
+        this.prepare(txid);
         this.commit(txid);
     }
     
     function testTwoTransactions() public {
-        this.begin(txid2);
-        string memory value = this.getValue(vara, txid2);
+        (string memory value, bool isSuccessful) = this.getValue(vara, txid2);
+        Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("hello", value, "var-a contains an unexpected value!");
         
-        
-        this.begin(txid3);
-        value = this.getValue(vara, txid3);
-        string memory value2 = this.getValue(varb, txid3);
+        (value, isSuccessful) = this.getValue(vara, txid3);
+        Assert.ok(isSuccessful, "get value failed unexpectedly!");
+        (string memory value2, bool isSuccessful2) = this.getValue(varb, txid3);
+        Assert.ok(isSuccessful2, "get value failed unexpectedly!");
         Assert.equal("bye bye", value2, "var-b contains an unexpected value!");
-        this.setValue(varb, txid3, value);
-        value2 = this.getValue(varb, txid3);
+        isSuccessful = this.setValue(varb, txid3, value);
+        Assert.ok(isSuccessful, "set value failed unexpectedly!");
+        (value2, isSuccessful2) = this.getValue(varb, txid3);
+        Assert.ok(isSuccessful2, "get value failed unexpectedly!");
         Assert.equal("hello", value2, "var-b contains an unexpected value!");
         string[] memory lockedVariables = getLockedVariables(txid3);
         Assert.equal(2, lockedVariables.length, "incorrect number of variables locked!");
+        this.prepare(txid3);
         this.commit(txid3);
         lockedVariables = getLockedVariables(txid3);
         Assert.equal(0, lockedVariables.length, "incorrect number of variables locked!");
         
 
-        value = this.getValue(vara, txid2);
+        (value, isSuccessful) = this.getValue(vara, txid2);
+        Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("hello", value, "var-a contains an unexpected value!");
         
         // lets see if we can see the effects of txid3
-        value = this.getValue(varb, txid2);
+        (value, isSuccessful) = this.getValue(varb, txid2);
+        Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("hello", value, "var-b contains an unexpected value!");
         this.setValue(vara, txid2, "I am the king!");
         this.setValue(varb, txid2, "I am the boss!");
-        value = this.getValue(vara, txid2);
+        (value, isSuccessful) = this.getValue(vara, txid2);
+        Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("I am the king!", value, "var-a contains an unexpected value!");
-        value = this.getValue(varb, txid2);
+        (value, isSuccessful) = this.getValue(varb, txid2);
+        Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("I am the boss!", value, "var-b contains an unexpected value!");
         lockedVariables = getLockedVariables(txid2);
         Assert.equal(2, lockedVariables.length, "incorrect number of variables locked!");
+        this.prepare(txid2);
         this.commit(txid2);
         lockedVariables = getLockedVariables(txid2);
         Assert.equal(0, lockedVariables.length, "incorrect number of variables locked!");
@@ -137,17 +148,17 @@ contract TestInternals is ResourceManager {
     }
     
     function testEffectsOfAbort() public {
-        this.begin(txid4);
-        this.begin(txid5);
 
-        string memory beforeSet = this.getValue(vara, txid5);
-        
+        (string memory beforeSet, bool isSuccessful) = this.getValue(vara, txid5);
+        Assert.ok(isSuccessful, "get value failed unexpectedly!");
         this.setValue(vara, txid5, "this is a new value!");
         string memory value = getBeforeImage(vara);
         Assert.equal(beforeSet, value, "incorrect value for vara.getBeforeImage()");
-        value = this.getValue(vara, txid5);
+        (value, isSuccessful) = this.getValue(vara, txid5);
+        Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("this is a new value!", value, "incorrect value for vara");
-        this.setValue(vara, txid5, "yet another new value!");
+        isSuccessful = this.setValue(vara, txid5, "yet another new value!");
+        Assert.ok(isSuccessful, "set value failed unexpectedly!");
         string[] memory lockedVariables = getLockedVariables(txid5);
         Assert.equal(1, lockedVariables.length, "incorrect number of variables locked!");
         this.abort(txid5);
@@ -160,25 +171,29 @@ contract TestInternals is ResourceManager {
         Assert.equal(beforeSet, value, "the value after abort must return to its original state");
         
         // lets see if we can the effects of txid5 were removed because of the abort
-        value = this.getValue(vara, txid4);
+        (value, isSuccessful) = this.getValue(vara, txid4);
+        Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("I am the king!", value, "incorrect value for vara");
-        
+        this.prepare(txid4);
         this.commit(txid4);
     }
     
     function testLocks_ReadThenWrite() public {
-        this.begin(txid6);
-        
-        this.getValue(vara, txid6);
-        this.getValue(varb, txid6);
+    
+        (string memory value, bool isSuccessful) = this.getValue(vara, txid6);
+        Assert.ok(isSuccessful, "get value failed unexpectedly!");
+        (value, isSuccessful) = this.getValue(varb, txid6);
+        Assert.ok(isSuccessful, "get value failed unexpectedly!");
         string[] memory lockedVariables = getLockedVariables(txid6);
         Assert.equal(2, lockedVariables.length, "incorrect number of variables locked!");
     
-        this.setValue(vara, txid6, "newValA");
-        this.setValue(varb, txid6, "newValB");
+        isSuccessful = this.setValue(vara, txid6, "newValA");
+        Assert.ok(isSuccessful, "set value failed unexpectedly!");
+        isSuccessful = this.setValue(varb, txid6, "newValB");
+        Assert.ok(isSuccessful, "set value failed unexpectedly!");
         lockedVariables = getLockedVariables(txid6);
         Assert.equal(2, lockedVariables.length, "incorrect number of variables locked!");
-    
+        this.prepare(txid6);
         this.commit(txid6);
         
         lockedVariables = getLockedVariables(txid6);

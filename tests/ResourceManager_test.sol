@@ -32,37 +32,48 @@ contract TestExternalOperations {
     }
     
     function checkBegin() public {
-        try rm.begin(txid) {
-            Assert.ok(true, 'successfully started tx');
-        } catch {
+        bool isSuccessful = rm.setValue("a", txid, "1");
+        if (isSuccessful) {
+            Assert.ok(true, 'successfully started tx1');
+        } else {
             Assert.ok(false, 'failed unexpected');
         }
-    
-        
-        try rm.begin(txid) {
-            Assert.ok(false, 'should not be able to start same tx again!');
-        } catch  {
-            Assert.ok(true, 'failed expectedly');
-        }
-        
-        try rm.begin(txid2) {
-            Assert.ok(true, 'successfully started tx2');
-        } catch  {
 
+        isSuccessful = rm.setValue("aa", txid2, "2");
+
+        if (isSuccessful) {
+            Assert.ok(true, 'successfully started tx2');
+        } else {
             Assert.ok(false, 'failed unexpected');
         }
         
     }
 
     function checkTxOwner() public {
-        try rm.begin(txid3) {
+         bool isSuccessful = rm.setValue("a", txid, "1");
+
+        if (isSuccessful) {
             Assert.ok(true, 'successfully started tx');
-        } catch  {
+        } else {
             Assert.ok(false, 'failed unexpected');
         }
         
         address owner = rm.getTxOwner(txid);
         Assert.equal(owner, TestsAccounts.getAccount(0), "wrong sender");
+    }
+
+    function checkPrepare() public {
+        try rm.prepare(txid) {
+            Assert.ok(true, 'successfully prepared tx');
+        } catch {
+            Assert.ok(false, 'failed unexpected');
+        }
+
+        try rm.prepare(txid2) {
+            Assert.ok(true, 'successfully prepared tx');
+        } catch {
+            Assert.ok(false, 'failed unexpected');
+        }
     }
     
     function checkSuccessfulCommit() public {
@@ -105,17 +116,22 @@ contract TestExternalOperations {
     }
     
     function checkSuccessfulAbort() public {
-        try rm.begin(txid4) {
+        bool isSuccessful = rm.setValue("b", txid4, "1");
+
+        if (isSuccessful) {
             Assert.ok(true, 'successfully started tx4');
-        } catch {
+        } else {
             Assert.ok(false, 'failed unexpected');
         }
-        
-        try rm.begin(txid5) {
-            Assert.ok(true, 'successfully started tx4');
-        } catch {
+
+        isSuccessful = rm.setValue("c", txid5, "1");
+
+        if (isSuccessful) {
+            Assert.ok(true, 'successfully started tx5');
+        } else {
             Assert.ok(false, 'failed unexpected');
         }
+    
         
         try rm.abort(txid4) {
             Assert.ok(true, 'successfully aborted tx4');
@@ -134,11 +150,11 @@ contract TestExternalOperations {
         }
     }
     
-    function checkFailedAbort_alreadyAborted() public {
+    function checkSuccessfulAbort_alreadyAborted() public {
         try rm.abort(txid4) {
-            Assert.ok(false, 'successfully aborted unexpectedly');
+            Assert.ok(true, 'we must be able to request aborting an aborted transaction');
         } catch  {
-            Assert.ok(true, 'failed expectedly');
+            Assert.ok(false, 'failed unexpectedly');
         }
     }
     

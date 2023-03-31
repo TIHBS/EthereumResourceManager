@@ -51,7 +51,7 @@ contract ResourceManager is IResourceManager {
     // mapping(VariableName => VariableState)
     mapping (string => VariableState) private variables;
     // mapping(TxId => TransactionState)
-    mapping (string => TxDetails) private txs;
+    mapping (string => TxDetails) public txs;
     
     // for testing
     function getTxOwner(string memory txId) public view returns (address) {

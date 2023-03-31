@@ -85,8 +85,8 @@ contract TestHotelManager {
 
         // try to book -- uh oh not enough money, abort
         (bool isAvailable, ) = hm.isRoomAvailable("txf2");
-        (uint price2, bool isSuccessful2) = hm.queryRoomPrice("txf2");
-        (uint balance, bool isSuccessful3) = hm.queryClientBalance("txf2");
+        (, bool isSuccessful2) = hm.queryRoomPrice("txf2");
+        (, bool isSuccessful3) = hm.queryClientBalance("txf2");
         rm.prepare("txf2");
         rm.abort("txf2");
         

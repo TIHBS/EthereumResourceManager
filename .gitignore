@@ -1,3 +1,5 @@
 .deps
 contracts/artifacts
 tests/artifacts
+bin
+build

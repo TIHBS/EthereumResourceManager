@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity >=0.7.0 <0.9.0;
+pragma solidity ^0.8.17;
 
 import "./IResourceManager.sol"; 
 import {StringUtils} from "./StringUtils.sol";
-//import "hardhat/console.sol";
 
 
 contract ResourceManager is IResourceManager {

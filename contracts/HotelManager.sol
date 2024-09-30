@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity >=0.7.0 <0.9.0;
+pragma solidity ^0.8.17;
 
 import "./IResourceManager.sol";
 import {StringUtils} from "./StringUtils.sol";
@@ -12,7 +12,7 @@ contract HotelManager {
     event QueryClientBalanceEvent(string txId, uint256 clientBalance);
     event HasReservationEvent(string txId, bool hasReservation);
 
-    function setResourceManagerAddress(address _newAddress) public {
+    function setResourceManagerAddress(address _newAddress) external {
         resourceManagerAddress = _newAddress;
     }
 

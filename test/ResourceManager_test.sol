@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
     
-pragma solidity >=0.4.22 <0.9.0;
+pragma solidity ^0.8.17;
 
 // This import is automatically injected by Remix
 import "remix_tests.sol"; 

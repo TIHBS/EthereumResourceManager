@@ -93,4 +93,14 @@ library StringUtils {
         
         return copy;
     }
+
+    /**
+     * Concatenates two strings (copy from )
+     * @param a first string
+     * @param b second string
+     */
+    function concat(string memory a, string memory b) internal pure returns (string memory) {
+        bytes memory concatenatedBytes = abi.encodePacked(a, b);
+        return string(concatenatedBytes);
+    }
 }

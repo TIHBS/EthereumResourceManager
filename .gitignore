@@ -3,3 +3,9 @@ contracts/artifacts
 tests/artifacts
 bin
 build
+.idea/codeStyles/codeStyleConfig.xml
+.idea/codeStyles/Project.xml
+.idea/EthereumResourceManager.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml

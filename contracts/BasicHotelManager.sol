@@ -32,7 +32,7 @@ contract BasicHotelManager {
         }
 
         // initial balance
-        return 1000;
+        return 100000;
     }
 
     function changeRoomPrice(uint256 newPrice) external {
@@ -50,8 +50,8 @@ contract BasicHotelManager {
     }
 
     function bookRoom() external {
-        bool available = isRoomAvailable();
-        require(available, "The room must be available to book it!");
+        // bool available = isRoomAvailable();
+        // require(available, "The room must be available to book it!");
         uint256 price = this.queryRoomPrice();
         deductFromClientBalance(price);
         roomOwner = StringUtils.addressToHexString(tx.origin);   

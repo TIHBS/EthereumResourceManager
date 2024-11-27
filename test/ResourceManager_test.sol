@@ -123,7 +123,7 @@ contract TestExternalOperations {
     
     /// #sender: account-1
     function checkSuccessfulAbort() public {
-        bool isSuccessful = rm.setValue("b", txid4, "1");
+        bool isSuccessful = rm.setValue("b", txid4, "1", TestsAccounts.getAccount(1));
 
         if (isSuccessful) {
             Assert.ok(true, 'successfully started tx4');
@@ -131,7 +131,7 @@ contract TestExternalOperations {
             Assert.ok(false, 'failed unexpected');
         }
 
-        isSuccessful = rm.setValue("c", txid5, "1");
+        isSuccessful = rm.setValue("c", txid5, "1", TestsAccounts.getAccount(1));
 
         if (isSuccessful) {
             Assert.ok(true, 'successfully started tx5');

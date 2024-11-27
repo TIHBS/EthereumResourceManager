@@ -82,15 +82,16 @@ contract TestInternals is ResourceManager {
         Assert.equal("", variables[vara].beforeImage, "incorrect beforeImage");
     }
     
+    /// #sender: account-1
     function testHappyPathWriteThenRead() public {
-        bool isSuccessful = this.setValue(vara, txid, "hello");
+        bool isSuccessful = this.setValue(vara, txid, "hello", TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, 'set value failed unexpectedly!');
-        isSuccessful = this.setValue(varb, txid, "bye bye");
+        isSuccessful = this.setValue(varb, txid, "bye bye", TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, 'set value failed unexpectedly!');
-        (string memory value, bool isSuccessful2) = this.getValue(vara, txid);
+        (string memory value, bool isSuccessful2) = this.getValue(vara, txid, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful2, 'get value failed unexpectedly!');
         Assert.equal("hello", value, "var-a contains an unexpected value!");
-        (value, isSuccessful) = this.getValue(varb, txid);
+        (value, isSuccessful) = this.getValue(varb, txid, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, 'get value failed unexpectedly!');
         Assert.equal("bye bye", value, "var-a contains an unexpected value!");
         string[] memory lockedVariables = getLockedVariables(txid);
@@ -99,19 +100,20 @@ contract TestInternals is ResourceManager {
         this.commit(txid);
     }
     
+    /// #sender: account-1
     function testTwoTransactions() public {
-        (string memory value, bool isSuccessful) = this.getValue(vara, txid2);
+        (string memory value, bool isSuccessful) = this.getValue(vara, txid2, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("hello", value, "var-a contains an unexpected value!");
         
-        (value, isSuccessful) = this.getValue(vara, txid3);
+        (value, isSuccessful) = this.getValue(vara, txid3, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "get value failed unexpectedly!");
-        (string memory value2, bool isSuccessful2) = this.getValue(varb, txid3);
+        (string memory value2, bool isSuccessful2) = this.getValue(varb, txid3, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful2, "get value failed unexpectedly!");
         Assert.equal("bye bye", value2, "var-b contains an unexpected value!");
-        isSuccessful = this.setValue(varb, txid3, value);
+        isSuccessful = this.setValue(varb, txid3, value, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "set value failed unexpectedly!");
-        (value2, isSuccessful2) = this.getValue(varb, txid3);
+        (value2, isSuccessful2) = this.getValue(varb, txid3, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful2, "get value failed unexpectedly!");
         Assert.equal("hello", value2, "var-b contains an unexpected value!");
         string[] memory lockedVariables = getLockedVariables(txid3);
@@ -122,20 +124,20 @@ contract TestInternals is ResourceManager {
         Assert.equal(0, lockedVariables.length, "incorrect number of variables locked!");
         
 
-        (value, isSuccessful) = this.getValue(vara, txid2);
+        (value, isSuccessful) = this.getValue(vara, txid2, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("hello", value, "var-a contains an unexpected value!");
         
         // lets see if we can see the effects of txid3
-        (value, isSuccessful) = this.getValue(varb, txid2);
+        (value, isSuccessful) = this.getValue(varb, txid2, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("hello", value, "var-b contains an unexpected value!");
-        this.setValue(vara, txid2, "I am the king!");
-        this.setValue(varb, txid2, "I am the boss!");
-        (value, isSuccessful) = this.getValue(vara, txid2);
+        this.setValue(vara, txid2, "I am the king!", TestsAccounts.getAccount(1));
+        this.setValue(varb, txid2, "I am the boss!", TestsAccounts.getAccount(1));
+        (value, isSuccessful) = this.getValue(vara, txid2, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("I am the king!", value, "var-a contains an unexpected value!");
-        (value, isSuccessful) = this.getValue(varb, txid2);
+        (value, isSuccessful) = this.getValue(varb, txid2, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("I am the boss!", value, "var-b contains an unexpected value!");
         lockedVariables = getLockedVariables(txid2);
@@ -147,17 +149,18 @@ contract TestInternals is ResourceManager {
         
     }
     
+    /// #sender: account-1
     function testEffectsOfAbort() public {
 
-        (string memory beforeSet, bool isSuccessful) = this.getValue(vara, txid5);
+        (string memory beforeSet, bool isSuccessful) = this.getValue(vara, txid5, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "get value failed unexpectedly!");
-        this.setValue(vara, txid5, "this is a new value!");
+        this.setValue(vara, txid5, "this is a new value!", TestsAccounts.getAccount(1));
         string memory value = getBeforeImage(vara);
         Assert.equal(beforeSet, value, "incorrect value for vara.getBeforeImage()");
-        (value, isSuccessful) = this.getValue(vara, txid5);
+        (value, isSuccessful) = this.getValue(vara, txid5, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("this is a new value!", value, "incorrect value for vara");
-        isSuccessful = this.setValue(vara, txid5, "yet another new value!");
+        isSuccessful = this.setValue(vara, txid5, "yet another new value!", TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "set value failed unexpectedly!");
         string[] memory lockedVariables = getLockedVariables(txid5);
         Assert.equal(1, lockedVariables.length, "incorrect number of variables locked!");
@@ -171,25 +174,26 @@ contract TestInternals is ResourceManager {
         Assert.equal(beforeSet, value, "the value after abort must return to its original state");
         
         // lets see if we can the effects of txid5 were removed because of the abort
-        (value, isSuccessful) = this.getValue(vara, txid4);
+        (value, isSuccessful) = this.getValue(vara, txid4, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "get value failed unexpectedly!");
         Assert.equal("I am the king!", value, "incorrect value for vara");
         this.prepare(txid4);
         this.commit(txid4);
     }
     
+    /// #sender: account-1
     function testLocks_ReadThenWrite() public {
     
-        (string memory value, bool isSuccessful) = this.getValue(vara, txid6);
+        (string memory value, bool isSuccessful) = this.getValue(vara, txid6, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "get value failed unexpectedly!");
-        (value, isSuccessful) = this.getValue(varb, txid6);
+        (value, isSuccessful) = this.getValue(varb, txid6, TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "get value failed unexpectedly!");
         string[] memory lockedVariables = getLockedVariables(txid6);
         Assert.equal(2, lockedVariables.length, "incorrect number of variables locked!");
     
-        isSuccessful = this.setValue(vara, txid6, "newValA");
+        isSuccessful = this.setValue(vara, txid6, "newValA", TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "set value failed unexpectedly!");
-        isSuccessful = this.setValue(varb, txid6, "newValB");
+        isSuccessful = this.setValue(varb, txid6, "newValB", TestsAccounts.getAccount(1));
         Assert.ok(isSuccessful, "set value failed unexpectedly!");
         lockedVariables = getLockedVariables(txid6);
         Assert.equal(2, lockedVariables.length, "incorrect number of variables locked!");

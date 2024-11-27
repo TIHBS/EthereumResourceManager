@@ -27,14 +27,16 @@ contract ResourceManager is IResourceManager {
     }
     
     struct TxDetails {
-        //The address that first initiated this transaction
+       // The address that first initiated this transaction
        address owner;
        // The state of the current transaction
        TxState state;
        // The list of variables locked (read or write) by the transaction
        string[] lockedVariables;
-        // the deadline for a tx in the STARTED state (in block height value)
-        uint256 timeout;
+       // The deadline for a tx in the STARTED state (in block height value)
+       uint256 timeout;
+       // The address of the TCCSCI Transaction Manager that is allowed to execute prepare*, commit*, and abort*
+       address tm;
     }
     
     modifier isTxOwner(string memory txId) {
@@ -42,8 +44,13 @@ contract ResourceManager is IResourceManager {
         _;
     }
 
-    modifier isTxStarted(string memory txId) {
-        require(ensureStarted(txId), "The transaction is in invalid state!");
+    modifier isTxManager(string memory txId) {
+        require (txs[txId].tm == address(0) || txs[txId].tm == tx.origin, "Message sender is not the transaction manager of global transaction!");
+        _;
+    }
+
+    modifier isTxStarted(string memory txId, address tmId) {
+        require(ensureStarted(txId, tmId), "The transaction is in invalid state!");
         _;
     }
     
@@ -51,6 +58,10 @@ contract ResourceManager is IResourceManager {
     mapping (string => VariableState) private variables;
     // mapping(TxId => TransactionState)
     mapping (string => TxDetails) public txs;
+
+    function getManager(string memory txId) public view returns (address) {
+        return txs[txId].tm;
+    }
     
     // for testing
     function getTxOwner(string memory txId) public view returns (address) {
@@ -89,7 +100,7 @@ contract ResourceManager is IResourceManager {
         }
     }
 
-    function prepare(string calldata txId) external override isTxOwner(txId) {
+    function prepare(string calldata txId) external override isTxManager(txId) {
         require(txs[txId].owner != address(0), "Cannot abort a trasnaction that is not started!");
 
         if(txs[txId].state == TxState.STARTED) {
@@ -101,7 +112,7 @@ contract ResourceManager is IResourceManager {
 
     }
 
-    function commit(string calldata txId) external override isTxOwner(txId) {
+    function commit(string calldata txId) external override isTxManager(txId) {
         require(txs[txId].state == TxState.PREPARED, "Cannot commit a transaction that is not in the prepared state!");
         // release all relevant locks
         releaseLocks(txId);
@@ -109,7 +120,7 @@ contract ResourceManager is IResourceManager {
         emit TxCommitted(tx.origin, txId);
     }
     
-    function abort(string calldata txId) external override isTxOwner(txId) {
+    function abort(string calldata txId) external override isTxManager(txId) {
         require(txs[txId].owner != address(0), "Cannot abort a trasnaction that is not started!");
         require(txs[txId].state != TxState.COMMITTED, "Cannot abort a transaction that is already committed!");
 
@@ -134,7 +145,7 @@ contract ResourceManager is IResourceManager {
         emit TxAborted(tx.origin, txId);
     }
     
-    function setValue(string memory variableName, string calldata txId, string memory value) external override isTxOwner(txId) isTxStarted(txId) returns (bool) {
+    function setValue(string memory variableName, string calldata txId, string memory value, address tmId) external override isTxOwner(txId) isTxStarted(txId, tmId) returns (bool) {
         bool acquiredLock;
         bool hasSetLock;
         (acquiredLock, hasSetLock) = acquireLock(variableName, txId, LockType.WRITE_LOCK);
@@ -155,7 +166,7 @@ contract ResourceManager is IResourceManager {
     
     }
 
-    function getValue(string memory variableName, string calldata txId) external override isTxOwner(txId) isTxStarted(txId) returns(string memory, bool) {
+    function getValue(string memory variableName, string calldata txId, address tmId) external override isTxOwner(txId) isTxStarted(txId, tmId) returns(string memory, bool) {
         bool acquiredLock;
         (acquiredLock, ) = acquireLock(variableName, txId, LockType.READ_LOCK);
         
@@ -171,11 +182,12 @@ contract ResourceManager is IResourceManager {
         }
     }
 
-    function ensureStarted(string memory txId) private returns(bool) {
+    function ensureStarted(string memory txId, address tmId) private returns(bool) {
         if(txs[txId].owner == address(0)) {
             txs[txId].owner = tx.origin;
             txs[txId].state = TxState.STARTED;
             txs[txId].timeout = TIMEOUT_DURATION + block.number;
+            txs[txId].tm = tmId;
         }
 
         return txs[txId].state == TxState.STARTED;

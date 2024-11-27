@@ -32,14 +32,14 @@ contract TestExternalOperations {
     }
     
     function checkBegin() public {
-        bool isSuccessful = rm.setValue("a", txid, "1");
+        bool isSuccessful = rm.setValue("a", txid, "1", TestsAccounts.getAccount(1));
         if (isSuccessful) {
             Assert.ok(true, 'successfully started tx1');
         } else {
             Assert.ok(false, 'failed unexpected');
         }
 
-        isSuccessful = rm.setValue("aa", txid2, "2");
+        isSuccessful = rm.setValue("aa", txid2, "2", TestsAccounts.getAccount(1));
 
         if (isSuccessful) {
             Assert.ok(true, 'successfully started tx2');
@@ -50,7 +50,7 @@ contract TestExternalOperations {
     }
 
     function checkTxOwner() public {
-         bool isSuccessful = rm.setValue("a", txid, "1");
+         bool isSuccessful = rm.setValue("a", txid, "1", TestsAccounts.getAccount(1));
 
         if (isSuccessful) {
             Assert.ok(true, 'successfully started tx');
@@ -60,8 +60,11 @@ contract TestExternalOperations {
         
         address owner = rm.getTxOwner(txid);
         Assert.equal(owner, TestsAccounts.getAccount(0), "wrong sender");
+        address tm = rm.getManager(txid);
+        Assert.equal(tm, TestsAccounts.getAccount(1), "wrong transaction manager");
     }
 
+    /// #sender: account-1
     function checkPrepare() public {
         try rm.prepare(txid) {
             Assert.ok(true, 'successfully prepared tx');
@@ -76,6 +79,7 @@ contract TestExternalOperations {
         }
     }
     
+    /// #sender: account-1
     function checkSuccessfulCommit() public {
         try rm.commit(txid) {
             Assert.ok(true, 'successfully committed tx');
@@ -90,7 +94,7 @@ contract TestExternalOperations {
         }
     }
     
-    /// #sender: account-1
+    /// #sender: account-0
     function checkFailedCommit_wrongSender() public {
         try rm.commit(txid3) {
             Assert.ok(false, 'successfully comitted unexpectedly');
@@ -99,6 +103,7 @@ contract TestExternalOperations {
         }
     }
     
+    /// #sender: account-1
     function checkFailedCommit_alreadyCommitted() public {
         try rm.commit(txid) {
             Assert.ok(false, 'successfully comitted unexpectedly');
@@ -106,7 +111,8 @@ contract TestExternalOperations {
             Assert.ok(true, 'failed expectedly');
         }
     }
-    
+
+    /// #sender: account-1
     function checkFailedCommit_noTx() public {
         try rm.commit(txid4) {
             Assert.ok(false, 'successfully comitted unexpectedly');
@@ -115,6 +121,7 @@ contract TestExternalOperations {
         }
     }
     
+    /// #sender: account-1
     function checkSuccessfulAbort() public {
         bool isSuccessful = rm.setValue("b", txid4, "1");
 
@@ -141,7 +148,7 @@ contract TestExternalOperations {
     }
     
     
-    /// #sender: account-1
+    /// #sender: account-0
     function checkFailedAbort_wrongSender() public {
         try rm.abort(txid5) {
             Assert.ok(false, 'successfully aborted unexpectedly');
@@ -150,6 +157,7 @@ contract TestExternalOperations {
         }
     }
     
+    /// #sender: account-1
     function checkSuccessfulAbort_alreadyAborted() public {
         try rm.abort(txid4) {
             Assert.ok(true, 'we must be able to request aborting an aborted transaction');
@@ -158,6 +166,7 @@ contract TestExternalOperations {
         }
     }
     
+    /// #sender: account-1
     function checkFailedAbort_alreadyCommitted() public {
         try rm.abort(txid) {
             Assert.ok(false, 'successfully aborted unexpectedly');
@@ -166,6 +175,7 @@ contract TestExternalOperations {
         }
     }
     
+    /// #sender: account-1
     function checkFailedAbort_noTx() public {
         try rm.abort(txid6) {
             Assert.ok(false, 'successfully aborted unexpectedly');

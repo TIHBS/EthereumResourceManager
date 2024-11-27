@@ -11,6 +11,6 @@ interface IResourceManager {
     function prepare(string calldata txId) external;
     function commit(string calldata txId) external;
     function abort(string calldata txId) external;
-    function setValue(string memory variableName, string memory txId, string memory value) external returns(bool);
-    function getValue(string memory variableName, string memory txId) external returns(string memory, bool);
+    function setValue(string memory variableName, string calldata txId, string memory value, address tmId) external returns(bool);
+    function getValue(string memory variableName, string calldata txId, address tmId) external returns(string memory, bool);
 }

@@ -70,12 +70,12 @@ contract HotelManager {
         }
     }
 
-    function changeRoomPrice(string calldata txId, uint256 newPrice, address tm) external returns (bool) {
+    function changeRoomPrice(string calldata txId, address tm, uint256 newPrice) external returns (bool) {
         string memory priceS = StringUtils.uintToString(newPrice);
         return getRM().setValue("roomPrice", txId, priceS, tm);
     }
 
-    function addToClientBalance(string calldata txId, uint256 amountToAdd, address tm) external returns (bool) {
+    function addToClientBalance(string calldata txId, address tm, uint256 amountToAdd) external returns (bool) {
         require(amountToAdd > 0, "The amount must be a positive value!");
         string memory varName = formulateClientBalanceVarName(tx.origin);
         (uint256 balance, bool isSuccessful) = queryClientBalance(txId, tm);
@@ -96,7 +96,7 @@ contract HotelManager {
         require(available && successful, "the room must be available!");
         (uint256 roomPrice, bool isSuccessful) = this.queryRoomPrice(txId, tm);
         if (isSuccessful) {
-            if (deductFromClientBalance(txId, roomPrice, tm)) {
+            if (deductFromClientBalance(txId, tm, roomPrice)) {
                 return getRM().setValue("roomOwner", txId, StringUtils.addressToHexString(tx.origin), tm);
             } else {
                 return false;
@@ -126,7 +126,7 @@ contract HotelManager {
         return getRM().setValue("roomOwner", txId, "", tm);
     }
 
-    function deductFromClientBalance(string calldata txId, uint256 amountToDeduct, address tm) internal returns (bool) {
+    function deductFromClientBalance(string calldata txId, address tm, uint256 amountToDeduct) internal returns (bool) {
         string memory varName = formulateClientBalanceVarName(tx.origin);
         (uint256 balance, bool isSuccessful) = queryClientBalance(txId, tm);
 

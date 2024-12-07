@@ -3,10 +3,10 @@ pragma solidity ^0.8.17;
 
 interface IResourceManager {
 
-    event TxStarted(address indexed owner, string indexed txId);
-    event TxCommitted(address indexed owner, string indexed txId);
-    event TxAborted(address indexed owner, string indexed txId);
-    event Voted(address indexed owner, string indexed txId, bool isYes);
+    event TxStarted(address owner, string txId);
+    event TxCommitted(address owner, string txId);
+    event TxAborted(address owner, string txId);
+    event Voted(address owner, string txId, bool isYes);
 
     function prepare(string calldata txId) external;
     function commit(string calldata txId) external;

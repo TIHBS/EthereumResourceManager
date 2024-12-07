@@ -106,4 +106,20 @@ contract TestHotelManager {
 
         Assert.ok(isSuccessful1 && isSuccessful2 && isSuccessful3 && isSuccessful4 && isSuccessful5, "Failed unexpectedly!");
     }
+
+    function testAbort() public {
+        (,bool isSuccessful1) = hm.queryClientBalance("tx1", TestsAccounts.getAccount(0));
+        Assert.ok(isSuccessful1);
+        // add to the balance
+        bool isSuccessful2 = hm.addToClientBalance("tx1", 5000, TestsAccounts.getAccount(0));
+        Assert.ok(isSuccessful2);
+        (uint256 value,bool isSuccessful3) = hm.queryClientBalance("tx1", TestsAccounts.getAccount(0));
+        Assert.ok(value == 5000, "Wrong amount");
+        Assert.ok(isSuccessful3);
+        rm.abort("tx1");
+        (uint256 value,bool isSuccessful4) = hm.queryClientBalance("tx1", TestsAccounts.getAccount(0));
+        Assert.ok(value == 0, "Wrong amount");
+        Assert.ok(isSuccessful4);
+
+    }
 }

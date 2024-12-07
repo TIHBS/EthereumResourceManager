@@ -28,7 +28,7 @@ contract TestHotelManager {
 
     function testChangePrice() public {
         (uint initialPrice, bool isSuccessful1) = hm.queryRoomPrice("tx1", TestsAccounts.getAccount(0));
-        bool isSuccessful2 = hm.changeRoomPrice("tx1", initialPrice * 2, TestsAccounts.getAccount(0));
+        bool isSuccessful2 = hm.changeRoomPrice("tx1", TestsAccounts.getAccount(0), initialPrice * 2);
         (uint newPrice, bool isSuccessful3) = hm.queryRoomPrice("tx1", TestsAccounts.getAccount(0));
         Assert.equal(initialPrice * 2, newPrice, "price should double!");
         rm.prepare("tx1");
@@ -39,7 +39,7 @@ contract TestHotelManager {
 
     function testChangeBalance() public {
         (uint initialBalance, bool isSuccessful1) = hm.queryClientBalance("tx2", TestsAccounts.getAccount(0));
-        bool isSuccessful2 = hm.addToClientBalance("tx2", 2000, TestsAccounts.getAccount(0));
+        bool isSuccessful2 = hm.addToClientBalance("tx2", TestsAccounts.getAccount(0), 2000);
         (uint newBalance, bool isSuccessful3) = hm.queryClientBalance("tx2", TestsAccounts.getAccount(0));
         Assert.equal(initialBalance + 2000, newBalance, "balance should increase!");
         rm.prepare("tx2");
@@ -91,7 +91,7 @@ contract TestHotelManager {
         rm.abort("txf2");
         
         // add to the balance
-        hm.addToClientBalance("txf3", 5000, TestsAccounts.getAccount(0));
+        hm.addToClientBalance("txf3", TestsAccounts.getAccount(0), 5000);
         rm.prepare("txf3");
         rm.commit("txf3");
 
@@ -109,17 +109,17 @@ contract TestHotelManager {
 
     function testAbort() public {
         (,bool isSuccessful1) = hm.queryClientBalance("tx1", TestsAccounts.getAccount(0));
-        Assert.ok(isSuccessful1);
+        Assert.ok(isSuccessful1, "querying client balance failed");
         // add to the balance
-        bool isSuccessful2 = hm.addToClientBalance("tx1", 5000, TestsAccounts.getAccount(0));
-        Assert.ok(isSuccessful2);
+        bool isSuccessful2 = hm.addToClientBalance("tx1", TestsAccounts.getAccount(0), 5000);
+        Assert.ok(isSuccessful2, "adding to client balance failed");
         (uint256 value,bool isSuccessful3) = hm.queryClientBalance("tx1", TestsAccounts.getAccount(0));
         Assert.ok(value == 5000, "Wrong amount");
-        Assert.ok(isSuccessful3);
+        Assert.ok(isSuccessful3, "querying client balance failed.");
         rm.abort("tx1");
-        (uint256 value,bool isSuccessful4) = hm.queryClientBalance("tx1", TestsAccounts.getAccount(0));
-        Assert.ok(value == 0, "Wrong amount");
-        Assert.ok(isSuccessful4);
+        (uint256 value2,bool isSuccessful4) = hm.queryClientBalance("tx1", TestsAccounts.getAccount(0));
+        Assert.ok(value2 == 0, "Wrong amount");
+        Assert.ok(isSuccessful4, "querying client balance failed");
 
     }
 }

@@ -171,6 +171,7 @@ contract ResourceManager is IResourceManager {
         (acquiredLock, ) = acquireLock(variableName, txId, LockType.READ_LOCK);
         
         if (!acquiredLock) {
+            emit CannotAcquireLock(txId);
             doAbort(txId);
 
             return ("", false);

@@ -79,7 +79,7 @@ contract TestHotelManager {
     function realWorldScenario() public {
         // increase price
         (uint price, bool isSuccessful1) = hm.queryRoomPrice("txf1", TestsAccounts.getAccount(0));
-        hm.changeRoomPrice("txf1", 320, TestsAccounts.getAccount(0));
+        hm.changeRoomPrice("txf1", TestsAccounts.getAccount(0), 320);
         rm.prepare("txf1");
         rm.commit("txf1");
 
@@ -108,18 +108,19 @@ contract TestHotelManager {
     }
 
     function testAbort() public {
-        (,bool isSuccessful1) = hm.queryClientBalance("tx1", TestsAccounts.getAccount(0));
+        (uint value1,bool isSuccessful1) = hm.queryClientBalance("tx5", TestsAccounts.getAccount(0));
+        console.log("%d", value1);
         Assert.ok(isSuccessful1, "querying client balance failed");
         // add to the balance
-        bool isSuccessful2 = hm.addToClientBalance("tx1", TestsAccounts.getAccount(0), 5000);
+        bool isSuccessful2 = hm.addToClientBalance("tx5", TestsAccounts.getAccount(0), 5000);
         Assert.ok(isSuccessful2, "adding to client balance failed");
-        (uint256 value,bool isSuccessful3) = hm.queryClientBalance("tx1", TestsAccounts.getAccount(0));
-        Assert.ok(value == 5000, "Wrong amount");
+        (uint256 value,bool isSuccessful3) = hm.queryClientBalance("tx5", TestsAccounts.getAccount(0));
+        console.log("%d", value);
+        Assert.ok(value == value1 + 5000, "wrong amount");
         Assert.ok(isSuccessful3, "querying client balance failed.");
-        rm.abort("tx1");
-        (uint256 value2,bool isSuccessful4) = hm.queryClientBalance("tx1", TestsAccounts.getAccount(0));
-        Assert.ok(value2 == 0, "Wrong amount");
+        rm.abort("tx5");
+        (uint256 value2,bool isSuccessful4) = hm.queryClientBalance("tx6", TestsAccounts.getAccount(0));
+        Assert.ok(value2 == value1, "Wrong amount");
         Assert.ok(isSuccessful4, "querying client balance failed");
-
     }
 }

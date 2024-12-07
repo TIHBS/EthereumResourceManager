@@ -7,6 +7,7 @@ interface IResourceManager {
     event TxCommitted(address owner, string txId);
     event TxAborted(address owner, string txId);
     event Voted(address owner, string txId, bool isYes);
+    event CannotAcquireLock(string txId);
 
     function prepare(string calldata txId) external;
     function commit(string calldata txId) external;

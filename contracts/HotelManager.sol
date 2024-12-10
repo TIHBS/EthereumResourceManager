@@ -11,6 +11,7 @@ contract HotelManager {
     event QueryRoomPriceEvent(string txId, uint256 roomPrice);
     event QueryClientBalanceEvent(string txId, uint256 clientBalance);
     event HasReservationEvent(string txId, bool hasReservation);
+    event Error(string txId, string message);
 
     function setResourceManagerAddress(address _newAddress) external {
         resourceManagerAddress = _newAddress;
@@ -92,10 +93,19 @@ contract HotelManager {
     }
 
     function bookRoom(string calldata txId, address tm) external returns (bool) {
-        (bool available, bool successful) = isRoomAvailable(txId, tm);
-        require(available && successful, "the room must be available!");
-        (uint256 roomPrice, bool isSuccessful) = this.queryRoomPrice(txId, tm);
-        if (isSuccessful) {
+        (bool available, bool successful1) = isRoomAvailable(txId, tm);
+        (uint256 roomPrice, bool successful2) = this.queryRoomPrice(txId, tm);
+        if (!successful1) {
+            emit Error(txId, "bookRoom Failed because roomOwner var is locked!");
+        } else if (!successful2) {
+            emit Error(txId, "bookRoom Failed because roomPrice var is locked!");
+        } else if (!available) {
+           emit Error(txId, "bookRoom Failed because room is already booked!"); 
+        }
+
+        if (successful1 && successful2 && available) {
+            // require(available, "the room must be available!");
+
             if (deductFromClientBalance(txId, tm, roomPrice)) {
                 return getRM().setValue("roomOwner", txId, StringUtils.addressToHexString(tx.origin), tm);
             } else {
@@ -122,8 +132,13 @@ contract HotelManager {
 
     function checkout(string calldata txId, address tm) external returns (bool) {
         (bool gotReservation, bool isSuccessful) = this.hasReservation(txId, tm);
-        require(gotReservation && isSuccessful, "you must have a reservation in order to checkout!");
-        return getRM().setValue("roomOwner", txId, "", tm);
+
+        if (isSuccessful) {
+            require(gotReservation, "you must have a reservation in order to checkout!");
+            return getRM().setValue("roomOwner", txId, "", tm);
+        }
+        
+        return false;
     }
 
     function deductFromClientBalance(string calldata txId, address tm, uint256 amountToDeduct) internal returns (bool) {

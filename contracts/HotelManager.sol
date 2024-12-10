@@ -11,7 +11,6 @@ contract HotelManager {
     event QueryRoomPriceEvent(string txId, uint256 roomPrice);
     event QueryClientBalanceEvent(string txId, uint256 clientBalance);
     event HasReservationEvent(string txId, bool hasReservation);
-    event Error(string txId, string message);
 
     function setResourceManagerAddress(address _newAddress) external {
         resourceManagerAddress = _newAddress;
@@ -94,31 +93,24 @@ contract HotelManager {
 
     function bookRoom(string calldata txId, address tm) external returns (bool) {
         (bool available, bool successful1) = isRoomAvailable(txId, tm);
-        (uint256 roomPrice, bool successful2) = this.queryRoomPrice(txId, tm);
-        if (!successful1) {
-            emit Error(txId, "bookRoom Failed because roomOwner var is locked!");
-        } else if (!successful2) {
-            emit Error(txId, "bookRoom Failed because roomPrice var is locked!");
-        } else if (!available) {
-           emit Error(txId, "bookRoom Failed because room is already booked!"); 
-        }
 
-        if (successful1 && successful2 && available) {
-            // require(available, "the room must be available!");
+        if (successful1 && available) {
+            (uint256 roomPrice, bool successful2) = this.queryRoomPrice(txId, tm);
 
-            if (deductFromClientBalance(txId, tm, roomPrice)) {
-                return getRM().setValue("roomOwner", txId, StringUtils.addressToHexString(tx.origin), tm);
-            } else {
-                return false;
+            if (successful2) {
+                
+                if (deductFromClientBalance(txId, tm, roomPrice)) {
+                    return getRM().setValue("roomOwner", txId, StringUtils.addressToHexString(tx.origin), tm);
+                }
             }
-
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     function hasReservation(string calldata txId, address tm) external returns (bool, bool) {
         (string memory ownerS, bool isSuccessful) = getRM().getValue("roomOwner", txId, tm);
+
         if (isSuccessful) {
             string memory currentClient = StringUtils.addressToHexString(tx.origin);
             bool result = StringUtils.compareStrings(ownerS, currentClient);
